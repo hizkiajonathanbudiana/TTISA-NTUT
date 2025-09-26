@@ -1,0 +1,28 @@
+{
+    "nav": {
+        "events": "Events",
+        "posts": "Posts",
+        "teams": "Teams",
+        "profile": "Profile",
+        "cms": "CMS",
+        "login": "Login",
+        "logout": "Logout"
+    },
+    "homepage": {
+        "heroTitle": "Your International Student Community",
+        "heroSubtitle": "Connecting students from around the world at National Taipei University of Technology.",
+        "heroButton": "See Upcoming Events",
+        "whatWeDoTitle": "What We Do",
+        "whatWeDoSubtitle": "We are here to make your journey at NTUT unforgettable.",
+        "featureCulturalTitle": "Cultural Events",
+        "featureCulturalText": "Experience diverse cultures through festivals, food fairs, and international celebrations right here on campus.",
+        "featureAcademicTitle": "Academic Support",
+        "featureAcademicText": "Get help with your studies, find resources, and connect with senior students through our workshops and mentoring programs.",
+        "featureSocialTitle": "Social Networking",
+        "featureSocialText": "Make friends from all over the globe at our parties, sports events, and casual meetups.",
+        "eventsTitle": "Don't Miss Out!",
+        "eventsButton": "View All Events",
+        "postsTitle": "Latest Stories",
+        "postsButton": "Read More Stories"
+    }
+}

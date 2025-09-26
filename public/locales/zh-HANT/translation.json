@@ -1,0 +1,30 @@
+{
+    "nav": {
+        "events": "活動",
+        "posts": "貼文",
+        "teams": "團隊",
+        "profile": "個人資料",
+        "cms": "後台管理",
+        "login": "登入",
+        "logout": "登出"
+    },
+    "homepage": {
+        "heroTitle": "你的國際學生社團",
+        "heroSubtitle": "連結來自世界各地在臺北科技大學的學生。",
+        "heroButton": "查看即將舉行的活動",
+        "aboutTitle": "關於 TTISA",
+        "aboutText": "臺北科技大學國際學生協會 (TTISA) 是一個由學生領導的組織，致力於支持和豐富北科大國際學生的體驗。我們舉辦文化活動、學術工作坊和社交聚會，以培養一個充滿活力和包容性的社群。",
+        "eventsTitle": "不容錯過！",
+        "eventsButton": "查看所有活動",
+        "postsTitle": "最新動態",
+        "postsButton": "閱讀更多故事",
+        "whatWeDoTitle": "我們的活動",
+        "whatWeDoSubtitle": "我們在此讓您在北科大的旅程永生難忘。",
+        "featureCulturalTitle": "文化活動",
+        "featureCulturalText": "透過節慶、美食節和國際慶祝活動，在校園體驗多元文化。",
+        "featureAcademicTitle": "學術支持",
+        "featureAcademicText": "透過我們的工作坊和輔導計畫，獲得課業幫助、尋找資源，並與學長姐建立聯繫。",
+        "featureSocialTitle": "社交網絡",
+        "featureSocialText": "在我們的派對、體育活動和休閒聚會中，結交來自世界各地的朋友。"
+    }
+}
