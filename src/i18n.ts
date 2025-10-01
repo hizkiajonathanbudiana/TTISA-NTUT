@@ -1,27 +1,49 @@
+// import i18n from 'i18next';
+// import { initReactI18next } from 'react-i18next';
+
+// // Impor file terjemahan Anda secara langsung
+// import enTranslation from './locales/en/translation.json';
+// import zhHantTranslation from './locales/zh-HANT/translation.json';
+
+// i18n
+//     .use(initReactI18next)
+//     .init({
+//         // Masukkan terjemahan langsung ke dalam 'resources'
+//         resources: {
+//             en: {
+//                 translation: enTranslation,
+//             },
+//             'zh-HANT': {
+//                 translation: zhHantTranslation,
+//             },
+//         },
+//         lng: 'en', // Selalu mulai dengan Bahasa Inggris
+//         fallbackLng: 'en',
+//         interpolation: {
+//             escapeValue: false,
+//         },
+//     });
+
+// export default i18n;
+
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-
-// Impor file terjemahan Anda secara langsung
-import enTranslation from './locales/en/translation.json';
-import zhHantTranslation from './locales/zh-HANT/translation.json';
+import LanguageDetector from 'i18next-browser-languagedetector';
+import Backend from 'i18next-http-backend';
 
 i18n
-    .use(initReactI18next)
-    .init({
-        // Masukkan terjemahan langsung ke dalam 'resources'
-        resources: {
-            en: {
-                translation: enTranslation,
-            },
-            'zh-HANT': {
-                translation: zhHantTranslation,
-            },
-        },
-        lng: 'en', // Selalu mulai dengan Bahasa Inggris
-        fallbackLng: 'en',
-        interpolation: {
-            escapeValue: false,
-        },
-    });
+  .use(Backend)
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    fallbackLng: 'en',
+    debug: false,
+    interpolation: {
+      escapeValue: false, 
+    },
+    backend: {
+      loadPath: '/locales/{{lng}}/translation.json',
+    },
+  });
 
 export default i18n;
