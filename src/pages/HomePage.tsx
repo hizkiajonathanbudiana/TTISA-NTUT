@@ -128,6 +128,7 @@ import { motion } from 'framer-motion';
 import { WaveSeparator } from '../components/WaveSeparator';
 import { Icon } from '../components/Icon';
 import { useTranslation } from '../contexts/LanguageContext';
+import { SEO } from '../components/SEO';
 
 type Event = { id: string; slug: string; title_en: string | null; title_zh_hant: string | null; start_at: string; location: string | null; };
 type Post = { id: string; title_en: string | null; title_zh_hant: string | null; image_url: string; };
@@ -169,6 +170,12 @@ export const HomePage = () => {
 
     return (
         <div className="bg-background">
+            <SEO
+                title="TTISA NTUT - Taiwan Tech International Student Association"
+                description="Join TTISA at National Taiwan University of Science and Technology (NTUT). Connect with international students, attend exciting events, and build your global network in Taiwan."
+                keywords="TTISA NTUT, Taiwan Tech, International Students, Student Association, NTUT, National Taiwan University Science Technology, Taiwan International Community"
+                url="https://ttisa-ntut.vercel.app/"
+            />
             <section className="relative min-h-screen flex items-center justify-center text-center p-4 overflow-hidden">
                 <div className="absolute inset-0 z-0"><div className="absolute top-[5%] left-[10%] w-72 h-72 lg:w-96 lg:h-96 bg-accent-blue rounded-full filter blur-3xl" style={{ animation: `aura-pulse 8s infinite alternate` }}></div><div className="absolute bottom-[10%] right-[5%] w-72 h-72 lg:w-96 lg:h-96 bg-accent-green rounded-full filter blur-3xl" style={{ animation: `aura-pulse 10s infinite alternate-reverse` }}></div><div className="absolute top-[20%] right-[15%] w-64 h-64 lg:w-80 lg:h-80 bg-accent-purple rounded-full filter blur-3xl" style={{ animation: `aura-pulse 12s infinite alternate` }}></div></div>
                 <div className="relative z-10 max-w-3xl"><motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="text-4xl md:text-6xl font-extrabold text-text-primary leading-tight tracking-tight mb-4">{t('homepage.heroTitle')}</motion.h1><motion.p initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-8">{t('homepage.heroSubtitle')}</motion.p><motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.4 }}><Link to="/events" className="bg-text-primary text-background font-bold py-4 px-8 rounded-full text-lg hover:bg-neutral-700 transition-all duration-300 transform hover:scale-105 shadow-xl">{t('homepage.heroButton')}</Link></motion.div></div>

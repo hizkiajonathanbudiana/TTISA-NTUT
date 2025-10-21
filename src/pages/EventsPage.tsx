@@ -4,6 +4,7 @@ import { supabase } from '../contexts/AuthContext';
 import { useMemo } from 'react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { motion } from 'framer-motion';
+import { SEO } from '../components/SEO';
 
 type Event = {
     id: string;
@@ -59,6 +60,12 @@ export const EventsPage = () => {
 
     return (
         <div className="bg-background">
+            <SEO
+                title="Events - TTISA NTUT"
+                description="Discover upcoming events and activities organized by TTISA at National Taiwan University of Science and Technology. Join networking sessions, cultural events, and academic workshops."
+                keywords="TTISA events, NTUT activities, international student events, Taiwan Tech events, student networking, cultural activities"
+                url="https://ttisa-ntut.vercel.app/events"
+            />
             <section className="relative pt-40 pb-20 flex items-center justify-center text-center p-4 overflow-hidden">
                 <div className="absolute inset-0 z-0 opacity-50">
                     <div className="absolute top-[5%] left-[10%] w-72 h-72 lg:w-96 lg:h-96 bg-accent-blue rounded-full filter blur-3xl animate-pulse"></div>
