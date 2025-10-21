@@ -17,16 +17,40 @@ export const CheckInPage = () => {
         }
 
         const performCheckIn = async () => {
-            const { data, error } = await supabase.functions.invoke('check-in', {
-                body: { token },
-            });
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    throw new Error("You must be logged in to check in.");
+                }
 
-            if (error) {
-                setStatus('error');
-                setMessage(error.message || 'An unknown error occurred.');
-            } else {
+                const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-in`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({ token }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Check-in failed');
+                }
+
                 setStatus('success');
                 setMessage(data.message || 'Successfully checked in!');
+
+            } catch (error: any) {
+                const errorMessage = error.message;
+                if (errorMessage.includes("You have already checked in")) {
+                    setStatus('success');
+                    setMessage("You have already checked in for this event.");
+                } else {
+                    setStatus('error');
+                    setMessage(errorMessage);
+                }
             }
         };
 
