@@ -5,6 +5,7 @@ import './index.css';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LanguageProvider } from './contexts/LanguageContext.tsx'; // Impor Provider baru
+import './utils/debug.ts'; // Import debug utility
 
 const queryClient = new QueryClient();
 

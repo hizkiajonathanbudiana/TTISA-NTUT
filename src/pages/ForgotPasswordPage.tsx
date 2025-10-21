@@ -19,7 +19,8 @@ export const ForgotPasswordPage = () => {
     const onSubmit: SubmitHandler<FormInputs> = async (data) => {
         setLoading(true);
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(data.email, { redirectTo: `${window.location.origin}/update-password`, });
+            const redirectTo = import.meta.env.PROD ? 'https://ttisa-ntut.vercel.app/update-password' : `${window.location.origin}/update-password`;
+            const { error } = await supabase.auth.resetPasswordForEmail(data.email, { redirectTo });
             if (error) throw error;
             setSubmitted(true);
         } catch (error: any) { toast.error(error.message); }

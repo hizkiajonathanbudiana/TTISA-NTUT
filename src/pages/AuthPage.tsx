@@ -43,7 +43,11 @@ export const AuthPage = () => {
     };
 
     const signInWithGoogle = async () => {
-        const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+        const redirectTo = import.meta.env.PROD ? 'https://ttisa-ntut.vercel.app' : window.location.origin;
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo }
+        });
         if (error) toast.error(error.message);
     };
 

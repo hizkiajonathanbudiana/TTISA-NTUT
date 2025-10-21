@@ -60,7 +60,7 @@ import clsx from 'clsx';
 
 type UserProfile = {
     english_name: string | null;
-    roles: { name: 'admin' | 'member'; } | null;
+    roles: { name: 'admin' | 'member' | 'organizer' | 'developer'; } | null;
 };
 
 export const AppLayout = () => {
@@ -72,12 +72,36 @@ export const AppLayout = () => {
         queryKey: ['layout_profile', user?.id],
         queryFn: async () => {
             if (!user) return null;
+            console.log('Fetching profile for user ID:', user.id);
+
+            // First try the current structure
             const { data, error } = await supabase
                 .from('users')
                 .select('profiles(english_name), roles(name)')
                 .eq('id', user.id)
                 .single();
-            if (error) return null;
+
+            if (error) {
+                console.log('First query failed, trying alternative:', error);
+                // If that fails, try alternative structure
+                const { data: altData, error: altError } = await supabase
+                    .from('profiles')
+                    .select('english_name, users!inner(roles(name))')
+                    .eq('user_id', user.id)
+                    .single();
+
+                if (altError) {
+                    console.log('Alternative query also failed:', altError);
+                    return null;
+                }
+
+                return {
+                    english_name: altData?.english_name || null,
+                    roles: (altData?.users as any)?.roles || null
+                } as UserProfile;
+            }
+
+            console.log('Profile data:', data);
             return {
                 english_name: (data.profiles as any)?.english_name || null,
                 roles: (data.roles as any) || null
@@ -87,7 +111,8 @@ export const AppLayout = () => {
     });
 
     const userRole = profile?.roles?.name;
-    const canAccessCms = userRole === 'admin';
+    console.log('User role:', userRole, 'Profile:', profile);
+    const canAccessCms = userRole === 'admin' || userRole === 'organizer' || userRole === 'developer';
 
     const navLinkClass = ({ isActive }: { isActive: boolean }) =>
         clsx("block md:inline-block px-3 py-2 rounded-md text-base font-medium transition-colors",
