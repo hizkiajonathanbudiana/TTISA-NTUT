@@ -127,7 +127,6 @@ import { supabase } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { WaveSeparator } from '../components/WaveSeparator';
 import { Icon } from '../components/Icon';
-import HeroBackground from '../assets/hero-background.jpg';
 import { useTranslation } from '../contexts/LanguageContext';
 
 type Event = { id: string; slug: string; title_en: string | null; title_zh_hant: string | null; start_at: string; location: string | null; };

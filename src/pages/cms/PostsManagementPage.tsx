@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Icon } from '../../components/Icon';
 import clsx from 'clsx';
 
 const PostSchema = z.object({

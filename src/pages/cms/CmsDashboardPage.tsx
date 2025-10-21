@@ -84,7 +84,7 @@ export const CmsDashboardPage = () => {
             // --- AKHIR PERBAIKAN ---
 
             if (error) throw error;
-            return { usersCount, pendingRegsCount, upcomingEvents };
+            return { usersCount, pendingRegsCount, upcomingEvents: upcomingEvents as UpcomingEvent[] };
         }
     });
 

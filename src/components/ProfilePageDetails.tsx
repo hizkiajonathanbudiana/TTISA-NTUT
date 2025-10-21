@@ -9,7 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CmsActionButton } from './cms/CmsActionButton';
 
 const currentYear = new Date().getFullYear();
-const ProfileSchema = z.object({ english_name: z.string().min(1, 'English name is required'), chinese_name: z.string().optional(), department: z.string().min(1, 'Department is required'), nationality: z.string().min(1, 'Nationality is required'), student_id: z.string().min(1, 'Student ID is required'), avatar_url: z.string().nullable(), birth_year: z.coerce.number().min(1920).max(currentYear).optional().nullable(), gender: z.enum(['male', 'female', 'rather_not_say']).optional().nullable(), });
+const ProfileSchema = z.object({ english_name: z.string().min(1, 'English name is required'), chinese_name: z.string().optional(), department: z.string().min(1, 'Department is required'), nationality: z.string().min(1, 'Nationality is required'), student_id: z.string().min(1, 'Student ID is required'), avatar_url: z.string().nullable(), birth_year: z.number().min(1920).max(currentYear).optional().nullable(), gender: z.enum(['male', 'female', 'rather_not_say']).optional().nullable(), });
 type ProfileFormInputs = z.infer<typeof ProfileSchema>;
 
 export const ProfileDetails = ({ profileData }: { profileData: ProfileFormInputs | null }) => {
@@ -18,7 +18,7 @@ export const ProfileDetails = ({ profileData }: { profileData: ProfileFormInputs
     const queryClient = useQueryClient();
     const [isEditing, setIsEditing] = useState(!profileData);
 
-    const { register, handleSubmit, formState: { errors, isSubmitting, isDirty }, reset } = useForm<ProfileFormInputs>({ defaultValues: profileData || {}, resolver: zodResolver(ProfileSchema) });
+    const { register, handleSubmit, formState: { errors, isSubmitting, isDirty }, reset } = useForm<ProfileFormInputs>({ defaultValues: profileData || {}, resolver: zodResolver(ProfileSchema) as any });
 
     const handleUpdateProfile: SubmitHandler<ProfileFormInputs> = async (formData) => {
         try {
@@ -34,13 +34,13 @@ export const ProfileDetails = ({ profileData }: { profileData: ProfileFormInputs
     };
 
     return (
-        <form onSubmit={handleSubmit(handleUpdateProfile)} className="space-y-4">
+        <form onSubmit={handleSubmit(handleUpdateProfile as any)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div><label className="text-sm font-medium">{t('profile.englishNameLabel')}</label><input {...register('english_name')} disabled={!isEditing} className="mt-1 block w-full px-3 py-2 border rounded-lg bg-white/50 disabled:bg-neutral-100 disabled:opacity-70" />{errors.english_name && <p className="mt-1 text-sm text-system-danger">{errors.english_name.message}</p>}</div>
                 <div><label className="text-sm font-medium">{t('profile.chineseNameLabel')}</label><input {...register('chinese_name')} disabled={!isEditing} className="mt-1 block w-full px-3 py-2 border rounded-lg bg-white/50 disabled:bg-neutral-100 disabled:opacity-70" /></div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label className="text-sm font-medium">{t('profile.birthYearLabel')}</label><input type="number" placeholder={String(currentYear - 20)} {...register('birth_year')} disabled={!isEditing} className="mt-1 block w-full px-3 py-2 border rounded-lg bg-white/50 disabled:bg-neutral-100 disabled:opacity-70" />{errors.birth_year && <p className="mt-1 text-sm text-system-danger">{errors.birth_year.message}</p>}</div>
+                <div><label className="text-sm font-medium">{t('profile.birthYearLabel')}</label><input type="number" placeholder={String(currentYear - 20)} {...register('birth_year', { valueAsNumber: true })} disabled={!isEditing} className="mt-1 block w-full px-3 py-2 border rounded-lg bg-white/50 disabled:bg-neutral-100 disabled:opacity-70" />{errors.birth_year && <p className="mt-1 text-sm text-system-danger">{errors.birth_year.message}</p>}</div>
                 <div><label className="text-sm font-medium">{t('profile.genderLabel')}</label><select {...register('gender')} disabled={!isEditing} className="mt-1 block w-full px-3 py-2 border rounded-lg bg-white disabled:bg-neutral-100 disabled:opacity-70"><option value="">{t('profile.selectGender')}</option><option value="male">{t('profile.genderMale')}</option><option value="female">{t('profile.genderFemale')}</option><option value="rather_not_say">{t('profile.genderRatherNotSay')}</option></select></div>
             </div>
             <div><label className="text-sm font-medium">{t('profile.departmentLabel')}</label><input {...register('department')} disabled={!isEditing} className="mt-1 block w-full px-3 py-2 border rounded-lg bg-white/50 disabled:bg-neutral-100 disabled:opacity-70" />{errors.department && <p className="mt-1 text-sm text-system-danger">{errors.department.message}</p>}</div>
