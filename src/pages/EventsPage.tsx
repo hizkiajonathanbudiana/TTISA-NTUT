@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { SEO } from '../components/SEO';
+import { getFullUrl } from '../utils/url';
 
 type Event = {
     id: string;
@@ -64,7 +65,7 @@ export const EventsPage = () => {
                 title="Events - TTISA NTUT"
                 description="Discover upcoming events and activities organized by TTISA at National Taiwan University of Science and Technology. Join networking sessions, cultural events, and academic workshops."
                 keywords="TTISA events, NTUT activities, international student events, Taiwan Tech events, student networking, cultural activities"
-                url="https://ttisa-ntut.vercel.app/events"
+                url={getFullUrl('/events')}
             />
             <section className="relative pt-40 pb-20 flex items-center justify-center text-center p-4 overflow-hidden">
                 <div className="absolute inset-0 z-0 opacity-50">

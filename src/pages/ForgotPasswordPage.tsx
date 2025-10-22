@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
+import { getFullUrl } from '../utils/url';
 
 const ForgotPasswordSchema = z.object({ email: z.string().email('Invalid email address') });
 type FormInputs = z.infer<typeof ForgotPasswordSchema>;
@@ -19,7 +20,7 @@ export const ForgotPasswordPage = () => {
     const onSubmit: SubmitHandler<FormInputs> = async (data) => {
         setLoading(true);
         try {
-            const redirectTo = import.meta.env.PROD ? 'https://ttisa-ntut.vercel.app/update-password' : `${window.location.origin}/update-password`;
+            const redirectTo = import.meta.env.PROD ? getFullUrl('/update-password') : `${window.location.origin}/update-password`;
             const { error } = await supabase.auth.resetPasswordForEmail(data.email, { redirectTo });
             if (error) throw error;
             setSubmitted(true);

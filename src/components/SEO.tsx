@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { getAppUrl, getFullUrl } from '../utils/url';
 
 interface SEOProps {
     title?: string;
@@ -12,8 +13,8 @@ export const SEO = ({
     title = "TTISA NTUT - Taiwan Tech International Student Association",
     description = "Taiwan Tech International Student Association (TTISA) at National Taiwan University of Science and Technology (NTUT). Join our community of international students for events, networking, and support.",
     keywords = "TTISA, NTUT, Taiwan Tech, International Students, Student Association, National Taiwan University of Science and Technology, Taiwan, International Community, Events, Networking",
-    image = "https://ttisa-ntut.vercel.app/ttisa-logo.jpg",
-    url = "https://ttisa-ntut.vercel.app/"
+    image = getFullUrl('/ttisa-logo.jpg'),
+    url = getAppUrl()
 }: SEOProps) => {
     useEffect(() => {
         // Update title

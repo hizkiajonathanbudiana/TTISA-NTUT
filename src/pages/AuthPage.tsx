@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { z } from 'zod';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { getAppUrl } from '../utils/url';
 
 // --- STYLES & ICONS ---
 const Icon = ({ path, className = "w-5 h-5" }: { path: string; className?: string; }) => (<svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}> <path strokeLinecap="round" strokeLinejoin="round" d={path} /> </svg>);
@@ -43,7 +44,7 @@ export const AuthPage = () => {
     };
 
     const signInWithGoogle = async () => {
-        const redirectTo = import.meta.env.PROD ? 'https://ttisa-ntut.vercel.app' : window.location.origin;
+        const redirectTo = import.meta.env.PROD ? getAppUrl() : window.location.origin;
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo }

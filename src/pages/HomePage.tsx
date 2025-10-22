@@ -129,6 +129,7 @@ import { WaveSeparator } from '../components/WaveSeparator';
 import { Icon } from '../components/Icon';
 import { useTranslation } from '../contexts/LanguageContext';
 import { SEO } from '../components/SEO';
+import { getAppUrl } from '../utils/url';
 
 type Event = { id: string; slug: string; title_en: string | null; title_zh_hant: string | null; start_at: string; location: string | null; };
 type Post = { id: string; title_en: string | null; title_zh_hant: string | null; image_url: string; };
@@ -174,7 +175,7 @@ export const HomePage = () => {
                 title="TTISA NTUT - Taiwan Tech International Student Association"
                 description="Join TTISA at National Taiwan University of Science and Technology (NTUT). Connect with international students, attend exciting events, and build your global network in Taiwan."
                 keywords="TTISA NTUT, Taiwan Tech, International Students, Student Association, NTUT, National Taiwan University Science Technology, Taiwan International Community"
-                url="https://ttisa-ntut.vercel.app/"
+                url={getAppUrl()}
             />
             <section className="relative min-h-screen flex items-center justify-center text-center p-4 overflow-hidden">
                 <div className="absolute inset-0 z-0"><div className="absolute top-[5%] left-[10%] w-72 h-72 lg:w-96 lg:h-96 bg-accent-blue rounded-full filter blur-3xl" style={{ animation: `aura-pulse 8s infinite alternate` }}></div><div className="absolute bottom-[10%] right-[5%] w-72 h-72 lg:w-96 lg:h-96 bg-accent-green rounded-full filter blur-3xl" style={{ animation: `aura-pulse 10s infinite alternate-reverse` }}></div><div className="absolute top-[20%] right-[15%] w-64 h-64 lg:w-80 lg:h-80 bg-accent-purple rounded-full filter blur-3xl" style={{ animation: `aura-pulse 12s infinite alternate` }}></div></div>

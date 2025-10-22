@@ -3,6 +3,7 @@ import { supabase } from '../contexts/AuthContext';
 import { useTranslation } from '../contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { SEO } from '../components/SEO';
+import { getFullUrl } from '../utils/url';
 
 type Member = { position_en: string | null; position_zh_hant: string | null; profiles: { english_name: string | null; avatar_url: string | null; } | null; };
 type Team = { id: string; name_en: string | null; name_zh_hant: string | null; description_en: string | null; description_zh_hant: string | null; team_members: Member[]; };
@@ -32,7 +33,7 @@ export const TeamsPage = () => {
         title="Our Team - TTISA NTUT"
         description="Meet the dedicated team members of TTISA at National Taiwan University of Science and Technology. Learn about our leadership and the passionate individuals who make our community thrive."
         keywords="TTISA team, NTUT leadership, international student leaders, Taiwan Tech student association team, TTISA members"
-        url="https://ttisa-ntut.vercel.app/teams"
+        url={getFullUrl('/teams')}
       />
       <section className="relative pt-40 pb-20 flex items-center justify-center text-center p-4 overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-50"><div className="absolute top-[5%] left-[10%] w-72 h-72 lg:w-96 lg:h-96 bg-accent-purple rounded-full filter blur-3xl animate-pulse"></div><div className="absolute bottom-[10%] right-[5%] w-72 h-72 lg:w-96 lg:h-96 bg-accent-green rounded-full filter blur-3xl animate-pulse animation-delay-4000"></div></div>
