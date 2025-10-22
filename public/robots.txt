@@ -1,8 +1,27 @@
 User-agent: *
 Allow: /
+Allow: /events
+Allow: /teams
+Allow: /posts
+Disallow: /admin
+Disallow: /api/
+Disallow: /*.json$
 
 # Sitemaps
 Sitemap: https://ttisa-ntut.vercel.app/sitemap.xml
 
-# Allow crawling of all content
+# Crawl settings
 Crawl-delay: 1
+
+# Additional search engines
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot  
+Allow: /
+Crawl-delay: 1
+
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 2
