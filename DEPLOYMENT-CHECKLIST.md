@@ -1,6 +1,7 @@
 # TTISA NTUT Deployment Checklist
 
 ## ✅ Pre-Deployment Steps
+<!-- Updated: 2025-10-22 - Force deployment trigger -->
 
 ### 1. **Supabase Authentication Configuration**
 - [ ] Go to Supabase Dashboard > Authentication > URL Configuration
