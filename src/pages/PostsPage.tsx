@@ -84,6 +84,7 @@ import { supabase } from '../contexts/AuthContext';
 import { useTranslation } from '../contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import InfiniteScroll from 'react-infinite-scroll-component';
+import Loading from '../components/loading/Loading';
 
 type Post = {
     id: string;
@@ -165,7 +166,7 @@ export const PostsPage = () => {
 
             <section className="py-16 md:py-24 container mx-auto px-4">
                 {isLoading ? (
-                    <div className="text-center text-text-secondary">Loading posts...</div>
+                    <div className="py-20 text-center"><Loading /></div>
                 ) : posts && posts.length > 0 ? (
                     <InfiniteScroll
                         dataLength={posts.length}

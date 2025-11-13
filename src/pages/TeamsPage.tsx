@@ -88,6 +88,7 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { SEO } from '../components/SEO';
 import { getFullUrl } from '../utils/url';
+import Loading from '../components/loading/Loading';
 
 type Member = {
   position_en: string | null;
@@ -195,7 +196,7 @@ export const TeamsPage = () => {
 
       <div className="container mx-auto px-4 py-16 space-y-16">
         {isLoading ? (
-          <div className="text-center text-text-secondary">Loading teams...</div>
+          <div className="py-20 text-center"><Loading /></div>
         ) : teams && teams.length > 0 ? (
           teams.map((team: Team) => {
             const teamName =

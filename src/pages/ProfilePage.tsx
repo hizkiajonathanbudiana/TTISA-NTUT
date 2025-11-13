@@ -151,6 +151,7 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient, useInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
+import Loading from '../components/loading/Loading';
 
 const currentYear = new Date().getFullYear();
 const ProfileSchema = z.object({
@@ -272,7 +273,7 @@ const MyEventsList = ({ userId }: { userId: string }) => {
     const registrations = data?.pages.flatMap(page => page) ?? [];
     const handleShowLess = () => { queryClient.setQueryData(['my_registrations', userId], (data: any) => ({ pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1), })); };
     const statusClasses = { pending: 'bg-yellow-100 text-yellow-800', accepted: 'bg-green-100 text-green-800', rejected: 'bg-red-100 text-red-800', };
-    if (isLoading) return <p>Loading event history...</p>;
+    if (isLoading) return (<div className="py-6 text-center"><div className="inline-block text-[10px]"><Loading /></div></div>);
     if (registrations.length === 0) return <p className="text-text-secondary">{t('profile.events.noRegistrations')}</p>;
     return (<div className="overflow-x-auto"><table className="min-w-full"><thead><tr><th className="p-4 text-left text-sm font-semibold text-text-secondary">{t('profile.events.title')}</th><th className="p-4 text-left text-sm font-semibold text-text-secondary">{t('profile.events.registrationDate')}</th><th className="p-4 text-left text-sm font-semibold text-text-secondary">{t('profile.events.status')}</th></tr></thead><tbody>{registrations.map((reg: any) => { const title = language === 'zh-HANT' && reg.events?.title_zh_hant ? reg.events.title_zh_hant : reg.events?.title_en; return (<tr key={reg.id} className="border-t border-white/20"><td className="p-4 font-medium text-text-primary"><Link to={`/events/${reg.events?.slug}`} className="hover:underline">{title}</Link></td><td className="p-4 text-text-secondary">{new Date(reg.created_at).toLocaleDateString()}</td><td className="p-4"><span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusClasses[reg.status as keyof typeof statusClasses]}`}>{t(`profile.events.${reg.status}`)}</span></td></tr>) })}</tbody></table><div className="mt-6 flex justify-center gap-4">{hasNextPage && (<button onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover disabled:opacity-50">{isFetchingNextPage ? 'Loading...' : 'Show More'}</button>)} {(data?.pages.length ?? 0) > 1 && (<button onClick={handleShowLess} className="px-6 py-2 bg-neutral-200 text-text-primary font-semibold rounded-lg hover:bg-neutral-300">Show Less</button>)}</div></div>);
 };
@@ -337,7 +338,8 @@ export const ProfilePage = () => {
     });
     const handleDemote = () => { if (window.confirm(t('profile.demote.confirm'))) { demoteMutation.mutate(); } };
 
-    if (isLoading) return <div className="flex items-center justify-center min-h-screen"><div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-primary"></div></div>;
+    // Render page chrome (header/tabs) even while profile data is loading.
+    // The loading indicator will be shown in the content area below.
 
     const profile = profileData?.profiles;
     const userRole = profileData?.roles?.name;
@@ -350,26 +352,34 @@ export const ProfilePage = () => {
                 <h2 className="text-3xl font-bold text-center text-text-primary mb-8">{t('profile.pageTitle')}</h2>
                 <div className="border-b border-white/30 mb-8"><nav className="-mb-px flex space-x-8" aria-label="Tabs"><button onClick={() => setActiveTab('details')} className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'details' ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:border-gray-300'}`}>{t('profile.tabs.details')}</button><button onClick={() => setActiveTab('events')} className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'events' ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:border-gray-300'}`}>{t('profile.tabs.events')}</button></nav></div>
 
-                {activeTab === 'details' && (
+                {/* If profile is loading, show loader in content area; otherwise show tab content */}
+                {isLoading ? (
+                    <div className="py-12 text-center"><Loading /></div>
+                ) : (
                     <>
-                        {isEditingProfile ? (
-                            <ProfileForm profile={profile || null} onCancel={() => { if (profile) setIsEditingProfile(false) }} onSaveSuccess={() => setIsEditingProfile(false)} />
-                        ) : (
-                            profile &&
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                <div className="md:col-span-1"><Avatar url={profile.avatar_url} onUpload={() => { }} isEditing={false} /></div>
-                                <div className="md:col-span-2"><ProfileView profile={profile} onEditClick={() => setIsEditingProfile(true)} /></div>
-                            </div>
+                        {activeTab === 'details' && (
+                            <>
+                                {isEditingProfile ? (
+                                    <ProfileForm profile={profile || null} onCancel={() => { if (profile) setIsEditingProfile(false) }} onSaveSuccess={() => setIsEditingProfile(false)} />
+                                ) : (
+                                    profile &&
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                        <div className="md:col-span-1"><Avatar url={profile.avatar_url} onUpload={() => { }} isEditing={false} /></div>
+                                        <div className="md:col-span-2"><ProfileView profile={profile} onEditClick={() => setIsEditingProfile(true)} /></div>
+                                    </div>
+                                )}
+                                {isPrivilegedUser && !isEditingProfile && profile && (
+                                    <div className="mt-8 pt-6 border-t border-red-500/30">
+                                        <h3 className="text-xl font-bold text-system-danger">{t('profile.demote.title')}</h3><p className="text-text-secondary text-sm mt-2">{t('profile.demote.description')}</p>
+                                        <button onClick={handleDemote} disabled={demoteMutation.isPending} className="mt-4 px-4 py-2 border border-system-danger text-system-danger font-semibold rounded-lg hover:bg-system-danger hover:text-white transition-colors disabled:opacity-50">{demoteMutation.isPending ? 'Processing...' : t('profile.demote.button')}</button>
+                                    </div>
+                                )}
+                            </>
                         )}
-                        {isPrivilegedUser && !isEditingProfile && profile && (
-                            <div className="mt-8 pt-6 border-t border-red-500/30">
-                                <h3 className="text-xl font-bold text-system-danger">{t('profile.demote.title')}</h3><p className="text-text-secondary text-sm mt-2">{t('profile.demote.description')}</p>
-                                <button onClick={handleDemote} disabled={demoteMutation.isPending} className="mt-4 px-4 py-2 border border-system-danger text-system-danger font-semibold rounded-lg hover:bg-system-danger hover:text-white transition-colors disabled:opacity-50">{demoteMutation.isPending ? 'Processing...' : t('profile.demote.button')}</button>
-                            </div>
-                        )}
+
+                        {activeTab === 'events' && user && (<MyEventsList userId={user.id} />)}
                     </>
                 )}
-                {activeTab === 'events' && user && (<MyEventsList userId={user.id} />)}
             </motion.div>
         </div>
     );

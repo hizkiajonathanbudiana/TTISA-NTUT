@@ -49,6 +49,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth, supabase } from '../contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
+import Loading from './loading/Loading';
 
 type Role = 'admin' | 'member';
 type RoleBasedRouteProps = { allowedRoles: Role[]; children?: React.ReactNode; };
@@ -82,7 +83,11 @@ export const RoleBasedRoute = ({ allowedRoles, children }: RoleBasedRouteProps) 
   });
 
   if (authLoading || (user && profileLoading)) {
-    return <div className="flex justify-center items-center h-screen">Verifying Access...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loading />
+      </div>
+    );
   }
 
   if (!user) {

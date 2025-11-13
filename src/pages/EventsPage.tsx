@@ -111,6 +111,7 @@ import { motion } from 'framer-motion';
 import { SEO } from '../components/SEO';
 import { getFullUrl } from '../utils/url';
 import InfiniteScroll from 'react-infinite-scroll-component';
+import Loading from '../components/loading/Loading';
 
 type Event = {
     id: string;
@@ -169,7 +170,6 @@ export const EventsPage = () => {
         fetchNextPage: fetchNextUpcoming,
         hasNextPage: hasNextUpcoming,
         isLoading: isLoadingUpcoming,
-        error: errorUpcoming
     } = useInfiniteQuery({
         queryKey: ['events', 'upcoming'],
         queryFn: ({ pageParam }) => fetchEvents({ pageParam, filter: 'upcoming' }),
@@ -182,7 +182,6 @@ export const EventsPage = () => {
         fetchNextPage: fetchNextPast,
         hasNextPage: hasNextPast,
         isLoading: isLoadingPast,
-        error: errorPast
     } = useInfiniteQuery({
         queryKey: ['events', 'past'],
         queryFn: ({ pageParam }) => fetchEvents({ pageParam, filter: 'past' }),
@@ -193,11 +192,7 @@ export const EventsPage = () => {
     const upcomingEvents = upcomingData?.pages.flatMap(page => page.data) ?? [];
     const pastEvents = pastData?.pages.flatMap(page => page.data) ?? [];
 
-    const isLoading = isLoadingUpcoming || isLoadingPast;
-    const error = errorUpcoming || errorPast;
-
-    if (isLoading) return <div className="text-center py-40">Loading events...</div>;
-    if (error) return <div className="text-center py-40 text-system-danger">Error loading events: {error.message}</div>;
+    // per-section loading/error are handled below (isLoadingUpcoming/isLoadingPast)
 
     return (
         <div className="bg-background">
@@ -220,7 +215,9 @@ export const EventsPage = () => {
 
             <section className="py-16 md:py-24 container mx-auto px-4">
                 <h2 className="text-3xl font-bold text-text-primary mb-12 text-center">{t('events.upcoming')}</h2>
-                {upcomingEvents.length > 0 ? (
+                {isLoadingUpcoming ? (
+                    <div className="py-12 text-center"><Loading /></div>
+                ) : upcomingEvents.length > 0 ? (
                     <InfiniteScroll
                         dataLength={upcomingEvents.length}
                         next={fetchNextUpcoming}
@@ -238,7 +235,9 @@ export const EventsPage = () => {
 
             <section className="py-16 md:py-24 container mx-auto px-4">
                 <h2 className="text-3xl font-bold text-text-primary mb-12 text-center">{t('events.past')}</h2>
-                {pastEvents.length > 0 ? (
+                {isLoadingPast ? (
+                    <div className="py-12 text-center"><Loading /></div>
+                ) : pastEvents.length > 0 ? (
                     <InfiniteScroll
                         dataLength={pastEvents.length}
                         next={fetchNextPast}
