@@ -6,6 +6,7 @@ import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import clsx from 'clsx';
+import { Pagination } from '../../components/Pagination';
 
 const PostSchema = z.object({
   title_en: z.string().min(3, 'English title is required'),
@@ -67,20 +68,11 @@ const ImageUploader = ({ existingImages, onFilesChange }: { existingImages: stri
     );
 };
 
-const PostForm = ({ post, onFormSubmit, onCancel }: { post?: Post | null, onFormSubmit: (data: PostFormInputs, galleryFiles: File[], existingGallery: string[]) => void, onCancel: () => void }) => {
+const PostForm = ({ post, onFormSubmit, onCancel, events }: { post?: Post | null, onFormSubmit: (data: PostFormInputs, galleryFiles: File[], existingGallery: string[]) => void, onCancel: () => void, events: EventSelection[] }) => {
   const [activeTab, setActiveTab] = useState<'en' | 'zh'>('en');
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [existingGallery, setExistingGallery] = useState<string[]>(post?.images || []);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<PostFormInputs>({ defaultValues: post || { cta_event_id: '' }, resolver: zodResolver(PostSchema) });
-  
-  const { data: events } = useQuery<EventSelection[]>({
-      queryKey: ['event_selection_list'],
-      queryFn: async () => {
-          const { data, error } = await supabase.from('events').select('id, title_en').order('start_at', { ascending: false });
-          if (error) throw error;
-          return data;
-      }
-  });
 
   const onSubmit: SubmitHandler<PostFormInputs> = (data) => { onFormSubmit(data, galleryFiles, existingGallery); };
   
@@ -113,9 +105,42 @@ const PostForm = ({ post, onFormSubmit, onCancel }: { post?: Post | null, onForm
 export const PostsManagementPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { data: posts, isLoading } = useQuery<Post[]>({ queryKey: ['cms_posts'], queryFn: async () => { const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false }); if (error) throw new Error(error.message); return data; }, });
+
+  // API functions
+  const getCMSPosts = async (page: number, limit: number, search: string) => {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session) throw new Error('No session');
+
+    const response = await supabase.functions.invoke('get-cms-posts', {
+      body: { page, limit, search },
+    });
+
+    if (response.error) throw response.error;
+    return response.data;
+  };
+
+  const crudPost = async (method: 'CREATE' | 'UPDATE' | 'DELETE', postData: any) => {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session) throw new Error('No session');
+
+    const response = await supabase.functions.invoke('crud-post', {
+      body: { method, postData },
+    });
+
+    if (response.error) throw response.error;
+    return response.data;
+  };
+
+  const { data: postsData, isLoading } = useQuery({
+    queryKey: ['cms_posts', currentPage, searchTerm],
+    queryFn: () => getCMSPosts(currentPage, 20, searchTerm),
+    enabled: !!user,
+  });
+
   const mutation = useMutation({
     mutationFn: async ({ postData, galleryFiles, existingGallery }: { postData: PostFormInputs, galleryFiles: File[], existingGallery: string[] }) => {
       let finalGalleryUrls = [...existingGallery];
@@ -134,32 +159,49 @@ export const PostsManagementPage = () => {
         images: finalGalleryUrls, 
         author_id: user!.id,
         cta_event_id: postData.cta_event_id || null,
+        ...(editingPost ? { id: editingPost.id } : {})
       };
       
-      if (editingPost) {
-        const { error } = await supabase.from('posts').update(dataToSubmit).eq('id', editingPost.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('posts').insert(dataToSubmit);
-        if (error) throw error;
-      }
+      return crudPost(editingPost ? 'UPDATE' : 'CREATE', dataToSubmit);
     },
-    onSuccess: () => { toast.success(`Post ${editingPost ? 'updated' : 'created'} successfully!`); queryClient.invalidateQueries({ queryKey: ['cms_posts'] }); setIsFormOpen(false); setEditingPost(null); },
-    onError: (error) => { toast.dismiss(); toast.error(error.message); }
+    onSuccess: () => { 
+      toast.success(`Post ${editingPost ? 'updated' : 'created'} successfully!`); 
+      queryClient.invalidateQueries({ queryKey: ['cms_posts'] }); 
+      setIsFormOpen(false); 
+      setEditingPost(null); 
+    },
+    onError: (error: Error) => { 
+      toast.dismiss(); 
+      toast.error(error.message); 
+    }
   });
+
   const deleteMutation = useMutation({
     mutationFn: async (postId: string) => {
-      const { error } = await supabase.from('posts').delete().eq('id', postId);
-      if (error) throw error;
+      return crudPost('DELETE', { id: postId });
     },
     onSuccess: () => {
       toast.success('Post deleted.');
       queryClient.invalidateQueries({ queryKey: ['cms_posts'] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error(error.message);
     },
   });
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    queryClient.invalidateQueries({ queryKey: ['cms_posts'] });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const posts = postsData?.posts || [];
+  const events = postsData?.events || [];
+  const pagination = postsData?.pagination;
 
   return (
     <div className="space-y-6">
@@ -167,7 +209,22 @@ export const PostsManagementPage = () => {
         <h1 className="text-3xl font-bold">Manage Posts</h1>
         <button onClick={() => { setEditingPost(null); setIsFormOpen(true); }} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-hover font-semibold">Create New Post</button>
       </div>
-      {isFormOpen && <PostForm post={editingPost} onFormSubmit={(data, gallery, existing) => mutation.mutate({ postData: data, galleryFiles: gallery, existingGallery: existing })} onCancel={() => { setIsFormOpen(false); setEditingPost(null); }} />}
+
+      {/* Search */}
+      <form onSubmit={handleSearch} className="flex gap-4">
+        <input
+          type="text"
+          placeholder="Search posts by title..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 p-2 border rounded-md"
+        />
+        <button type="submit" className="px-4 py-2 bg-secondary text-white rounded-md hover:bg-secondary-hover font-semibold">
+          Search
+        </button>
+      </form>
+
+      {isFormOpen && <PostForm post={editingPost} onFormSubmit={(data, gallery, existing) => mutation.mutate({ postData: data, galleryFiles: gallery, existingGallery: existing })} onCancel={() => { setIsFormOpen(false); setEditingPost(null); }} events={events} />}
       <div className="bg-white shadow-md rounded-lg">
         <table className="min-w-full responsive-table">
           <thead className="bg-neutral-100">
@@ -178,7 +235,7 @@ export const PostsManagementPage = () => {
             </tr>
           </thead>
           <tbody>
-            {isLoading ? <tr><td colSpan={3} className="p-4 text-center">Loading...</td></tr> : posts?.map(post => (
+            {isLoading ? <tr><td colSpan={3} className="p-4 text-center">Loading...</td></tr> : posts?.map((post: Post) => (
               <tr key={post.id}>
                 <td data-label="Title">{post.title_en}</td>
                 <td data-label="Created At">{new Date(post.created_at).toLocaleDateString()}</td>
@@ -191,6 +248,15 @@ export const PostsManagementPage = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
     </div>
   );
 };

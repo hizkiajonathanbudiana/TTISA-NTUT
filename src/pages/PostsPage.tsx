@@ -21,13 +21,11 @@
 
 //     return (
 //         <Link to={`/posts/${post.id}`} className="block group bg-white/50 backdrop-blur-lg rounded-2xl overflow-hidden border border-white/20 shadow-md hover:shadow-xl transition-shadow duration-300 h-full">
-//             {/* FIX: Changed aspect-video to aspect-square */}
 //             <div className="aspect-square w-full overflow-hidden">
 //                 <img src={post.image_url} alt={title || 'Post image'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
 //             </div>
 //             <div className="p-4">
 //                 <h3 className="font-bold text-text-primary truncate">{title}</h3>
-//                 <p className="text-sm text-text-secondary mt-1">by {post.profiles?.english_name || 'TTISA Admin'}</p>
 //             </div>
 //         </Link>
 //     );
@@ -40,7 +38,7 @@
 //         queryFn: async () => {
 //             const { data, error } = await supabase.from('posts').select('id, title_en, title_zh_hant, image_url, created_at, profiles(english_name)').order('created_at', { ascending: false });
 //             if (error) throw new Error(error.message);
-//             return data;
+//             return data as unknown as Post[];
 //         },
 //     });
 
@@ -80,11 +78,12 @@
 //     );
 // };
 
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { supabase } from '../contexts/AuthContext';
 import { useTranslation } from '../contexts/LanguageContext';
 import { motion } from 'framer-motion';
+import InfiniteScroll from 'react-infinite-scroll-component';
 
 type Post = {
     id: string;
@@ -113,16 +112,41 @@ const PostCard = ({ post }: { post: Post }) => {
     );
 };
 
+const fetchPosts = async ({ pageParam = 0 }) => {
+    const { data, error } = await supabase.functions.invoke('get-paginated-posts', {
+        body: { pageParam }
+    });
+    if (error) {
+        let specificMessage = "Error fetching posts.";
+        if (error.context && error.context.data) {
+            try {
+                const errorJson = JSON.parse(error.context.data);
+                if (errorJson.error) specificMessage = errorJson.error;
+            } catch (e) { specificMessage = error.message; }
+        } else {
+            specificMessage = error.message;
+        }
+        throw new Error(specificMessage);
+    }
+    return data;
+};
+
 export const PostsPage = () => {
     const { t } = useTranslation();
-    const { data: posts, isLoading, error } = useQuery<Post[]>({
+    const {
+        data,
+        error,
+        fetchNextPage,
+        hasNextPage,
+        isLoading
+    } = useInfiniteQuery({
         queryKey: ['posts'],
-        queryFn: async () => {
-            const { data, error } = await supabase.from('posts').select('id, title_en, title_zh_hant, image_url, created_at, profiles(english_name)').order('created_at', { ascending: false });
-            if (error) throw new Error(error.message);
-            return data as unknown as Post[];
-        },
+        queryFn: fetchPosts,
+        initialPageParam: 0,
+        getNextPageParam: (lastPage) => lastPage.nextPageParam,
     });
+
+    const posts = data?.pages.flatMap(page => page.data) ?? [];
 
     if (error) return <div className="text-center py-40 text-system-danger">Error loading posts: {error.message}</div>;
 
@@ -143,13 +167,20 @@ export const PostsPage = () => {
                 {isLoading ? (
                     <div className="text-center text-text-secondary">Loading posts...</div>
                 ) : posts && posts.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {posts.map((post, i) => (
-                            <motion.div key={post.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.1 }}>
+                    <InfiniteScroll
+                        dataLength={posts.length}
+                        next={fetchNextPage}
+                        hasMore={!!hasNextPage}
+                        loader={<h4 className="text-center text-text-secondary py-8">Loading more posts...</h4>}
+                        endMessage={<p className="text-center text-text-secondary py-8">You have seen all posts.</p>}
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+                    >
+                        {posts.map((post: Post) => (
+                            <motion.div key={post.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                                 <PostCard post={post} />
                             </motion.div>
                         ))}
-                    </div>
+                    </InfiniteScroll>
                 ) : (
                     <div className="text-center py-12 text-text-secondary bg-white/30 backdrop-blur-sm rounded-lg">
                         <p>No posts yet. Check back soon!</p>

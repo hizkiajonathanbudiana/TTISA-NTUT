@@ -23,7 +23,12 @@ export const ProfileDetails = ({ profileData }: { profileData: ProfileFormInputs
     const handleUpdateProfile: SubmitHandler<ProfileFormInputs> = async (formData) => {
         try {
             const dataToSave = { ...formData, user_id: user!.id, birth_year: formData.birth_year || null };
-            const { error } = await supabase.from('profiles').upsert(dataToSave);
+
+            // Use Edge Function instead of direct Supabase call
+            const { error } = await supabase.functions.invoke('update-my-profile', {
+                body: dataToSave,
+            });
+
             if (error) throw error;
             toast.success(t('profile.updateSuccess'));
             await queryClient.invalidateQueries({ queryKey: ['profile', user!.id] });

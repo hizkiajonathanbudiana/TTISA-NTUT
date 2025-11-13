@@ -192,7 +192,7 @@ import { PostsManagementPage } from './pages/cms/PostsManagementPage';
 import { TeamsManagementPage } from './pages/cms/TeamsManagementPage';
 import { TeamEditPage } from './pages/cms/TeamEditPage';
 import { ContentManagementPage } from './pages/cms/ContentManagementPage';
-import { PaymentInstructionsPage } from './pages/cms/PaymentInstructionsPage';
+import { PaymentInstructionsPage } from './pages/cms/PaymentsManagementPage';
 import { SocialsManagementPage } from './pages/cms/SocialsManagementPage'; // Impor baru
 
 function App() {

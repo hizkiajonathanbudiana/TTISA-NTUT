@@ -4,10 +4,24 @@ import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { CmsActionButton } from '../../components/cms/CmsActionButton';
+import { Pagination } from '../../components/Pagination';
 
 type Role = { id: string; name: string; };
 type UserDetails = { user_id: string; email: string | null; english_name: string | null; student_id: string | null; avatar_url: string | null; role_id: string | null; role_name: string | null; };
 type UserProfile = { roles: { name: string; } | null; };
+type PaginatedUsersResponse = {
+    users: UserDetails[];
+    roles: Role[];
+    currentUserProfile: UserProfile | null;
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
+    };
+};
 
 const RoleEditModal = ({ user, roles, onSave, onCancel }: { user: UserDetails, roles: Role[], onSave: (userId: string, roleId: string) => void, onCancel: () => void }) => {
     const [selectedRoleId, setSelectedRoleId] = useState(user.role_id || '');
@@ -16,27 +30,51 @@ const RoleEditModal = ({ user, roles, onSave, onCancel }: { user: UserDetails, r
 
 export const UsersManagementPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [roleFilter, setRoleFilter] = useState<string>('all'); // New role filter state
     const [editingUser, setEditingUser] = useState<UserDetails | null>(null);
     const { user: currentUser } = useAuth();
     const queryClient = useQueryClient();
 
-    const { data: users, isLoading: isLoadingUsers } = useQuery<UserDetails[]>({ queryKey: ['cms_users'], queryFn: async () => { const { data, error } = await supabase.from('user_details').select('*'); if (error) throw new Error(error.message); return data; }, });
-    const { data: allRoles, isLoading: isLoadingRoles } = useQuery<Role[]>({ queryKey: ['roles'], queryFn: async () => { const { data, error } = await supabase.from('roles').select('*'); if (error) throw new Error(error.message); return data; } });
-    const { data: currentUserProfile } = useQuery<UserProfile | null>({ queryKey: ['current_user_profile', currentUser?.id], queryFn: async () => { if (!currentUser) return null; const { data, error } = await supabase.from('users').select('roles(name)').eq('id', currentUser.id).single(); if (error) throw new Error(error.message); return data as unknown as UserProfile; }, enabled: !!currentUser, });
+    // Fetch users with pagination via Edge Function
+    const { data: usersData, isLoading } = useQuery<PaginatedUsersResponse>({
+        queryKey: ['cms_users_paginated', currentPage, searchTerm, roleFilter],
+        queryFn: async () => {
+            const { data, error } = await supabase.functions.invoke('get-cms-users', {
+                body: { page: currentPage, limit: 50, search: searchTerm, roleFilter }
+            });
+            if (error) throw new Error(error.message);
+            return data;
+        },
+    });
+
+    const users = usersData?.users || [];
+    const allRoles = usersData?.roles || [];
+    const currentUserProfile = usersData?.currentUserProfile;
+    const pagination = usersData?.pagination;
 
     const updateRoleMutation = useMutation({
         mutationFn: async ({ userId, roleId }: { userId: string, roleId: string }) => {
-            const { error } = await supabase.rpc('update_user_role', {
-                target_user_id: userId,
-                target_role_id: roleId,
+            const { error } = await supabase.functions.invoke('crud-user', {
+                body: { action: 'update_role', data: { userId, roleId } }
             });
-            if (error) throw error;
+            if (error) throw new Error(error.message);
         },
-        onSuccess: () => { toast.success("User role updated successfully!"); setEditingUser(null); queryClient.invalidateQueries({ queryKey: ['cms_users'] }); },
+        onSuccess: () => {
+            toast.success("User role updated successfully!");
+            setEditingUser(null);
+            queryClient.invalidateQueries({ queryKey: ['cms_users_paginated'] });
+        },
         onError: (error) => toast.error(error.message),
     });
 
-    const filteredUsers = useMemo(() => { if (!users) return []; if (!searchTerm) return users; return users.filter(user => user.english_name?.toLowerCase().includes(searchTerm.toLowerCase()) || user.email?.toLowerCase().includes(searchTerm.toLowerCase()) || user.student_id?.toLowerCase().includes(searchTerm.toLowerCase())); }, [users, searchTerm]);
+    // Handle search with debouncing effect
+    const handleSearch = (value: string) => {
+        setSearchTerm(value);
+        setCurrentPage(1); // Reset to first page when searching
+    };
+
+    const filteredUsers = users; // Already filtered on server-side
 
     const rolesForModal = useMemo(() => {
         if (!allRoles) return [];
@@ -47,13 +85,51 @@ export const UsersManagementPage = () => {
     }, [allRoles, currentUserProfile]);
 
     const canEditRoles = currentUserProfile?.roles?.name === 'admin' || currentUserProfile?.roles?.name === 'developer';
-    const isLoading = isLoadingUsers || isLoadingRoles;
 
     return (
         <div className="space-y-6">
             {editingUser && rolesForModal && <RoleEditModal user={editingUser} roles={rolesForModal} onCancel={() => setEditingUser(null)} onSave={(userId, roleId) => updateRoleMutation.mutate({ userId, roleId })} />}
             <h1 className="text-3xl font-bold">Manage Users</h1>
-            <div className="mb-6"><input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Filter by name, email, or student ID..." className="w-full max-w-sm p-2 border rounded-md" /></div>
+
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div className="flex gap-4 flex-1">
+                    <div className="flex-1 max-w-sm">
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => handleSearch(e.target.value)}
+                            placeholder="Filter by name, email, or student ID..."
+                            className="w-full p-2 border rounded-md"
+                        />
+                    </div>
+
+                    {/* Role Filter Dropdown */}
+                    <div className="min-w-[140px]">
+                        <select
+                            value={roleFilter}
+                            onChange={(e) => {
+                                setRoleFilter(e.target.value);
+                                setCurrentPage(1); // Reset to first page when filtering
+                            }}
+                            className="w-full p-2 border rounded-md bg-white"
+                        >
+                            <option value="all">All Roles</option>
+                            <option value="admin">Admin Only</option>
+                            <option value="member">Member Only</option>
+                            <option value="organizer">Organizer Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                {pagination && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span>
+                            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} users
+                        </span>
+                    </div>
+                )}
+            </div>
+
             <div className="bg-white shadow-md rounded-lg overflow-x-auto">
                 <table className="min-w-full responsive-table">
                     <thead className="bg-neutral-100"><tr><th className="p-4 text-left font-semibold">Name</th><th className="p-4 text-left font-semibold">Student ID</th><th className="p-4 text-left font-semibold">Email</th><th className="p-4 text-left font-semibold">Role</th><th className="p-4 text-right font-semibold">Actions</th></tr></thead>
@@ -74,6 +150,15 @@ export const UsersManagementPage = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination Controls */}
+            {pagination && pagination.totalPages > 1 && (
+                <Pagination
+                    currentPage={currentPage}
+                    totalPages={pagination.totalPages}
+                    onPageChange={setCurrentPage}
+                />
+            )}
         </div>
     );
 };

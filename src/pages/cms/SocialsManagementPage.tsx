@@ -73,20 +73,113 @@ const SocialLinkForm = ({ link, onFormSubmit, onCancel }: { link?: SocialLink | 
 export const SocialsManagementPage = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingLink, setEditingLink] = useState<SocialLink | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
     const queryClient = useQueryClient();
-    const { data: links, isLoading } = useQuery<SocialLink[]>({ queryKey: ['social_links'], queryFn: async () => { const { data, error } = await supabase.from('social_links').select('*').order('display_order'); if (error) throw new Error(error.message); return data; }, });
-    const mutation = useMutation({ mutationFn: async (formData: SocialFormInputs) => { if (editingLink) { await supabase.from('social_links').update(formData).eq('id', editingLink.id).throwOnError(); } else { await supabase.from('social_links').insert(formData).throwOnError(); } }, onSuccess: () => { toast.success(`Social link ${editingLink ? 'updated' : 'created'}.`); queryClient.invalidateQueries({ queryKey: ['social_links'] }); setIsFormOpen(false); setEditingLink(null); }, onError: (error) => toast.error(error.message), });
-    const deleteMutation = useMutation({ mutationFn: async (id: string) => { await supabase.from('social_links').delete().eq('id', id).throwOnError(); }, onSuccess: () => { toast.success('Link deleted.'); queryClient.invalidateQueries({ queryKey: ['social_links'] }); }, onError: (error) => toast.error(error.message), });
+
+    // Direct database query instead of Edge Functions
+    const { data: linksData, isLoading } = useQuery({
+        queryKey: ['social_links', currentPage, searchTerm],
+        queryFn: async () => {
+            let query = supabase.from('social_links').select('*');
+
+            if (searchTerm) {
+                query = query.or(`platform.ilike.%${searchTerm}%,display_text.ilike.%${searchTerm}%,link_url.ilike.%${searchTerm}%`);
+            }
+
+            const { data, error, count } = await query
+                .order('display_order', { ascending: true })
+                .range((currentPage - 1) * 20, currentPage * 20 - 1);
+
+            if (error) throw new Error(error.message);
+
+            return {
+                data,
+                pagination: {
+                    page: currentPage,
+                    totalPages: Math.ceil((count || 0) / 20),
+                    total: count || 0,
+                    hasPrev: currentPage > 1,
+                    hasNext: currentPage < Math.ceil((count || 0) / 20)
+                }
+            };
+        },
+    });
+
+    const links = linksData?.data || [];
+    const pagination = linksData?.pagination;
+
+    // Handle search
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        setCurrentPage(1);
+    };
+
+    // Handle pagination
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+    };
+
+    // Direct database mutations instead of Edge Functions
+    const mutation = useMutation({
+        mutationFn: async (formData: SocialFormInputs) => {
+            if (editingLink) {
+                const { error } = await supabase.from('social_links').update(formData).eq('id', editingLink.id);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase.from('social_links').insert([formData]);
+                if (error) throw error;
+            }
+        },
+        onSuccess: () => {
+            toast.success(`Social link ${editingLink ? 'updated' : 'created'}.`);
+            queryClient.invalidateQueries({ queryKey: ['social_links'] });
+            setIsFormOpen(false);
+            setEditingLink(null);
+        },
+        onError: (error: any) => toast.error(error.message),
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase.from('social_links').delete().eq('id', id);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            toast.success('Link deleted.');
+            queryClient.invalidateQueries({ queryKey: ['social_links'] });
+        },
+        onError: (error: any) => toast.error(error.message),
+    });
 
     return (
         <div className="space-y-6">
             {isFormOpen && <SocialLinkForm link={editingLink} onFormSubmit={(data) => mutation.mutate(data)} onCancel={() => { setIsFormOpen(false); setEditingLink(null); }} />}
-            <div className="flex justify-between items-center"><h1 className="text-3xl font-bold">Manage Social Links</h1><button onClick={() => { setEditingLink(null); setIsFormOpen(true); }} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-hover font-semibold">Add New Link</button></div>
+
+            <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold">Manage Social Links</h1>
+                <button onClick={() => { setEditingLink(null); setIsFormOpen(true); }} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-hover font-semibold">Add New Link</button>
+            </div>
+
+            {/* Search */}
+            <form onSubmit={handleSearch} className="flex gap-4">
+                <input
+                    type="text"
+                    placeholder="Search social links..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1 p-2 border rounded-md"
+                />
+                <button type="submit" className="px-4 py-2 bg-secondary text-white rounded-md hover:bg-secondary-hover font-semibold">
+                    Search
+                </button>
+            </form>
+
             <div className="bg-white shadow-md rounded-lg overflow-x-auto">
                 <table className="min-w-full responsive-table">
                     <thead className="bg-neutral-100"><tr><th className="p-4 text-left font-semibold">Platform</th><th className="p-4 text-left font-semibold">Display Text</th><th className="p-4 text-left font-semibold">Link URL</th><th className="p-4 text-left font-semibold">Order</th><th className="p-4 text-left font-semibold">Status</th><th className="p-4 text-right font-semibold">Actions</th></tr></thead>
                     <tbody>
-                        {isLoading ? <tr><td colSpan={6}>Loading...</td></tr> : links?.map(link => (
+                        {isLoading ? <tr><td colSpan={6}>Loading...</td></tr> : links?.map((link: any) => (
                             <tr key={link.id}>
                                 <td data-label="Platform" className="capitalize">{link.platform}</td>
                                 <td data-label="Display Text">{link.display_text}</td>
@@ -99,6 +192,31 @@ export const SocialsManagementPage = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination */}
+            {pagination && pagination.totalPages > 1 && (
+                <div className="flex justify-center items-center space-x-2">
+                    <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={!pagination.hasPrev}
+                        className="px-3 py-1 bg-gray-200 rounded-md disabled:opacity-50"
+                    >
+                        Previous
+                    </button>
+
+                    <span className="px-4 py-2">
+                        Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
+                    </span>
+
+                    <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={!pagination.hasNext}
+                        className="px-3 py-1 bg-gray-200 rounded-md disabled:opacity-50"
+                    >
+                        Next
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

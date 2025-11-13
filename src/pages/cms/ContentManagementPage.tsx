@@ -6,6 +6,31 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { useEffect } from 'react';
 
+// API Functions for Edge Functions
+const getCMSContent = async (slug: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const response = await supabase.functions.invoke('get-cms-content', {
+        body: { slug },
+    });
+
+    if (response.error) throw response.error;
+    return response.data;
+};
+
+const crudContent = async (action: 'upsert', slug: string, data: any) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const response = await supabase.functions.invoke('crud-content', {
+        body: { action, slug, data },
+    });
+
+    if (response.error) throw response.error;
+    return response.data;
+};
+
 const ContentSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     content: z.string().optional(),
@@ -17,16 +42,11 @@ const PAGE_SLUG = 'about-ntut';
 export const ContentManagementPage = () => {
     const queryClient = useQueryClient();
 
-    const { data: pageContent, isLoading } = useQuery({
+    const { data: contentData, isLoading } = useQuery({
         queryKey: ['cms_content', PAGE_SLUG],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('cms_content')
-                .select('*')
-                .eq('slug', PAGE_SLUG)
-                .single();
-            if (error && error.code !== 'PGRST116') throw new Error(error.message);
-            return data;
+            const result = await getCMSContent(PAGE_SLUG);
+            return result.data;
         },
     });
 
@@ -40,24 +60,20 @@ export const ContentManagementPage = () => {
     });
 
     useEffect(() => {
-        if (pageContent) {
-            reset(pageContent);
+        if (contentData) {
+            reset(contentData);
         }
-    }, [pageContent, reset]);
+    }, [contentData, reset]);
 
     const mutation = useMutation({
         mutationFn: async (formData: ContentFormInputs) => {
-            const { error } = await supabase.from('cms_content').upsert({
-                slug: PAGE_SLUG,
-                ...formData,
-            });
-            if (error) throw error;
+            return crudContent('upsert', PAGE_SLUG, formData);
         },
         onSuccess: () => {
-            toast.success(`'${pageContent?.title || 'About NTUT'}' page updated successfully!`);
+            toast.success(`'${contentData?.title || 'About NTUT'}' page updated successfully!`);
             queryClient.invalidateQueries({ queryKey: ['cms_content', PAGE_SLUG] });
         },
-        onError: (error) => {
+        onError: (error: any) => {
             toast.error(error.message);
         },
     });
