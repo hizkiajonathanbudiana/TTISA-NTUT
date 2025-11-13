@@ -20,10 +20,11 @@
         "featureAcademicText": "Get help with your studies, find resources, and connect with senior students through our workshops and mentoring programs.",
         "featureSocialTitle": "Social Networking",
         "featureSocialText": "Make friends from all over the globe at our parties, sports events, and casual meetups.",
-        "eventsTitle": "Don't Miss Out!",
+        "eventsTitle": "Don't Miss Out, Our Events!",
         "eventsButton": "View All Events",
-        "postsTitle": "Latest Stories",
-        "postsButton": "Read More Stories"
+        "postsTitle": "Our Latest Posts",
+        "postsButton": "See More Posts",
+        "reviewsTitle": "What People Say"
     },
     "footer": {
         "description": "Fostering a vibrant and inclusive community for students from around the world at NTUT.",

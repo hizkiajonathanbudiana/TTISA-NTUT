@@ -20,10 +20,11 @@
         "featureAcademicText": "透過我們的工作坊和輔導計畫，獲得課業幫助、尋找資源，並與學長姐建立聯繫。",
         "featureSocialTitle": "社交網絡",
         "featureSocialText": "在我們的派對、體育活動和休閒聚會中，結交來自世界各地的朋友。",
-        "eventsTitle": "不容錯過！",
+        "eventsTitle": "別錯過我們的活動！",
         "eventsButton": "查看所有活動",
-        "postsTitle": "最新動態",
-        "postsButton": "閱讀更多故事"
+        "postsTitle": "我們的最新貼文",
+        "postsButton": "查看更多貼文",
+        "reviewsTitle": "人们怎么说"
     },
     "footer": {
         "description": "為來自世界各地的北科大國際學生，培養一個充滿活力和包容性的社群。",
