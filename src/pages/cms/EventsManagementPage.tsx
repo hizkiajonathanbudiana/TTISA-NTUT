@@ -797,6 +797,7 @@ import { z } from 'zod';
 import { Link } from 'react-router-dom';
 import { Pagination } from '../../components/Pagination';
 import clsx from 'clsx';
+import { uploadImageToSupabase } from '../../utils/storage';
 
 // Skema untuk Event (banner_url dihapus dari sini, akan di-handle manual)
 const EventSchema = z.object({
@@ -828,17 +829,6 @@ type EventFormInputs = z.infer<typeof EventSchema>;
 // Tambahkan banner_url kembali ke tipe Event utama
 type Event = EventFormInputs & { id: string; created_by: string; start_at: string; banner_url: string | null; };
 type PostSelection = { id: string; title_en: string | null; };
-
-// --- LOGIKA UPLOAD DARI POSTS ---
-const uploadToCloudinary = async (file: File): Promise<string> => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error.message || 'Image upload failed');
-  return data.secure_url;
-};
 
 // --- KOMPONEN UPLOADER BANNER BARU (VERSI SIMPLE) ---
 const EventBannerUploader = ({ existingBanner, onFileChange }: {
@@ -1114,8 +1104,22 @@ export const EventsManagementPage = () => {
       // 1. Upload file baru jika ada
       if (bannerFile) {
         toast.loading('Uploading banner image...');
-        finalBannerUrl = await uploadToCloudinary(bannerFile);
-        toast.dismiss();
+        try {
+          const { publicUrl } = await uploadImageToSupabase(bannerFile, {
+            folder: 'events/banners',
+            compression: {
+              maxWidth: 1920,
+              maxHeight: 1080,
+              quality: 0.82,
+              convertTo: 'image/webp',
+              maxOutputBytes: 100 * 1024,
+            },
+            cacheControl: '86400',
+          });
+          finalBannerUrl = publicUrl;
+        } finally {
+          toast.dismiss();
+        }
       }
 
       // 2. Siapkan data untuk dikirim ke edge function

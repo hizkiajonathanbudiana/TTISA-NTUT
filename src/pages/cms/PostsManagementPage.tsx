@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import clsx from 'clsx';
 import { Pagination } from '../../components/Pagination';
+import { uploadImageToSupabase } from '../../utils/storage';
 
 const PostSchema = z.object({
   title_en: z.string().min(3, 'English title is required'),
@@ -20,16 +21,6 @@ const PostSchema = z.object({
 type PostFormInputs = z.infer<typeof PostSchema>;
 type Post = { id: string; created_at: string; image_url: string; images: string[] | null; } & PostFormInputs;
 type EventSelection = { id: string; title_en: string | null; };
-
-const uploadToCloudinary = async (file: File): Promise<string> => {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
-  const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error.message || 'Image upload failed');
-  return data.secure_url;
-};
 
 const ImageUploader = ({ existingImages, onFilesChange }: { existingImages: string[], onFilesChange: (files: File[], remainingExisting: string[]) => void }) => {
     const [files, setFiles] = useState<File[]>([]);
@@ -146,10 +137,27 @@ export const PostsManagementPage = () => {
       let finalGalleryUrls = [...existingGallery];
       if (galleryFiles && galleryFiles.length > 0) {
         toast.loading(`Uploading ${galleryFiles.length} new images...`);
-        const uploadPromises = galleryFiles.map(file => uploadToCloudinary(file));
-        const newUrls = await Promise.all(uploadPromises);
-        finalGalleryUrls = [...finalGalleryUrls, ...newUrls];
-        toast.dismiss();
+        try {
+          const uploads = await Promise.all(
+            galleryFiles.map(async (file) => {
+              const { publicUrl } = await uploadImageToSupabase(file, {
+                folder: 'posts/gallery',
+                compression: {
+                  maxWidth: 1600,
+                  maxHeight: 1600,
+                  quality: 0.82,
+                  convertTo: 'image/webp',
+                  maxOutputBytes: 100 * 1024,
+                },
+                cacheControl: '86400',
+              });
+              return publicUrl;
+            })
+          );
+          finalGalleryUrls = [...finalGalleryUrls, ...uploads];
+        } finally {
+          toast.dismiss();
+        }
       }
       if (finalGalleryUrls.length === 0) throw new Error("At least one image is required for the post.");
       
@@ -277,7 +285,6 @@ export const PostsManagementPage = () => {
 // // type Post = { id: string; created_at: string; image_url: string; images: string[] | null; author_id: string; profiles: { english_name: string | null; } | null; } & PostFormInputs;
 // // type EventSelection = { id: string; title_en: string | null; };
 
-// // const uploadToCloudinary = async (file: File): Promise<string> => { /* ... */ };
 // // const ImageUploader = ({ existingImages, onFilesChange }: { existingImages: string[], onFilesChange: (files: File[], remainingExisting: string[]) => void }) => { /* ... */ };
 // // const PostForm = ({ post, onFormSubmit, onCancel }: { post?: Post | null, onFormSubmit: (data: PostFormInputs, galleryFiles: File[], existingGallery: string[]) => void, onCancel: () => void }) => { /* ... */ };
 
@@ -311,7 +318,6 @@ export const PostsManagementPage = () => {
 // //       let finalGalleryUrls = [...existingGallery];
 // //       if (galleryFiles && galleryFiles.length > 0) {
 // //         toast.loading(`Uploading ${galleryFiles.length} new images...`);
-// //         const uploadPromises = galleryFiles.map(file => uploadToCloudinary(file));
 // //         const newUrls = await Promise.all(uploadPromises);
 // //         finalGalleryUrls = [...finalGalleryUrls, ...newUrls];
 // //         toast.dismiss();
@@ -402,7 +408,6 @@ export const PostsManagementPage = () => {
 // type Post = { id: string; created_at: string; image_url: string; images: string[] | null; author_id: string; profiles: { english_name: string | null; } | null; } & PostFormInputs;
 // type EventSelection = { id: string; title_en: string | null; };
 
-// const uploadToCloudinary = async (file: File): Promise<string> => { /* ... */ };
 // const ImageUploader = ({ existingImages, onFilesChange }: { existingImages: string[], onFilesChange: (files: File[], remainingExisting: string[]) => void }) => { /* ... */ };
 // const PostForm = ({ post, onFormSubmit, onCancel }: { post?: Post | null, onFormSubmit: (data: PostFormInputs, galleryFiles: File[], existingGallery: string[]) => void, onCancel: () => void }) => { /* ... */ };
 
@@ -420,7 +425,6 @@ export const PostsManagementPage = () => {
 //       let finalGalleryUrls = [...existingGallery];
 //       if (galleryFiles && galleryFiles.length > 0) {
 //         toast.loading(`Uploading ${galleryFiles.length} new images...`);
-//         const uploadPromises = galleryFiles.map(file => uploadToCloudinary(file));
 //         const newUrls = await Promise.all(uploadPromises);
 //         finalGalleryUrls = [...finalGalleryUrls, ...newUrls];
 //         toast.dismiss();
@@ -503,7 +507,6 @@ export const PostsManagementPage = () => {
 // type Post = { id: string; created_at: string; image_url: string; images: string[] | null; author_id: string; profiles: { english_name: string | null; } | null; } & PostFormInputs;
 // type EventSelection = { id: string; title_en: string | null; };
 
-// const uploadToCloudinary = async (file: File): Promise<string> => { const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET); const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: formData }); const data = await response.json(); if (!response.ok) throw new Error(data.error.message || 'Image upload failed'); return data.secure_url; };
 // const ImageUploader = ({ existingImages, onFilesChange }: { existingImages: string[], onFilesChange: (files: File[], remainingExisting: string[]) => void }) => { /* ... */ };
 // const PostForm = ({ post, onFormSubmit, onCancel }: { post?: Post | null, onFormSubmit: (data: PostFormInputs, galleryFiles: File[], existingGallery: string[]) => void, onCancel: () => void }) => { /* ... */ };
 
@@ -519,7 +522,6 @@ export const PostsManagementPage = () => {
 //       let finalGalleryUrls = [...existingGallery];
 //       if (galleryFiles && galleryFiles.length > 0) {
 //         toast.loading(`Uploading ${galleryFiles.length} new images...`);
-//         const uploadPromises = galleryFiles.map(file => uploadToCloudinary(file));
 //         const newUrls = await Promise.all(uploadPromises);
 //         finalGalleryUrls = [...finalGalleryUrls, ...newUrls];
 //         toast.dismiss();

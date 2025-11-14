@@ -19,7 +19,6 @@
 // type ReviewFormInputs = z.infer<typeof ReviewSchema>;
 
 // // Sub-components
-// const uploadToCloudinary = async (file: File): Promise<string> => { const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET); const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: formData }); const data = await response.json(); if (!response.ok) throw new Error(data.error.message); return data.secure_url; };
 // const CallToAction = ({ link, text, title }: { link: string, text: string, title: string }) => {
 //   const [showQr, setShowQr] = useState(false); const fullLink = `${window.location.origin}${link}`;
 //   return (<div className="mt-8 pt-6 border-t border-white/20 text-center"><h3 className="text-xl font-bold text-text-primary mb-4">{title}</h3><div className="flex justify-center items-center gap-4 flex-wrap"><Link to={link} className="bg-secondary text-white font-bold py-3 px-6 rounded-full text-lg hover:bg-secondary-hover transition-colors shadow-lg">{text}</Link><button onClick={() => setShowQr(!showQr)} title="Show QR Code" className="p-3 bg-white/50 rounded-full hover:bg-white/80 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M12 20v-1m0-10a5 5 0 015 5h-1a4 4 0 00-4-4V9z" /></svg></button></div>{showQr && <div className="mt-4 bg-white p-4 inline-block rounded-lg shadow-lg"><QRCodeSVG value={fullLink} /></div>}</div>);
@@ -38,7 +37,6 @@
 // };
 // const PaymentProofUploader = ({ registrationId, existingProofUrl, eventSlug, status }: { registrationId: string; existingProofUrl: string | null; eventSlug: string; status: 'pending' | 'accepted' | 'rejected' | null }) => {
 //   const [isUploading, setIsUploading] = useState(false); const queryClient = useQueryClient();
-//   const uploadMutation = useMutation({ mutationFn: async (fileToUpload: File) => { const newUrl = await uploadToCloudinary(fileToUpload); const { error: updateError } = await supabase.from('event_registrations').update({ payment_proof_url: newUrl }).eq('id', registrationId); if (updateError) throw updateError; }, onSuccess: () => { toast.success('Payment proof uploaded successfully!'); queryClient.invalidateQueries({ queryKey: ['event', eventSlug] }); }, onError: (error: any) => toast.error(error.message), onSettled: () => setIsUploading(false), });
 //   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files.length > 0) { setIsUploading(true); uploadMutation.mutate(e.target.files[0]); } };
 //   if (status !== 'pending') return <p className="text-sm text-green-700 font-semibold mt-4">Your registration is confirmed. No further action needed.</p>;
 //   return (<div className="mt-4 pt-4 border-t"><h4 className="font-semibold text-text-primary">1. Upload Payment Proof (Recommended)</h4>{existingProofUrl ? (<div className="mt-2"><p className="text-sm">Proof submitted. You can replace it if needed.</p><a href={existingProofUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">View current proof</a></div>) : (<p className="text-sm text-text-secondary">Please upload a screenshot of your payment.</p>)}<input type="file" accept="image/*" onChange={handleFileChange} disabled={isUploading} className="mt-2 text-sm" />{isUploading && <p className="text-sm text-blue-600 animate-pulse mt-2">Uploading...</p>}</div>);
@@ -177,6 +175,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { uploadImageToSupabase } from '../utils/storage';
 
 // Types
 type PaymentInstruction = { id: string; method_name: string; instructions_en: string | null; instructions_zh_hant: string | null; };
@@ -195,7 +194,6 @@ type EventPageData = {
 }
 
 // --- Helper Functions (masih di frontend) ---
-const uploadToCloudinary = async (file: File): Promise<string> => { const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET); const response = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: formData }); const data = await response.json(); if (!response.ok) throw new Error(data.error.message); return data.secure_url; };
 const CallToAction = ({ link, text, title }: { link: string, text: string, title: string }) => {
   const [showQr, setShowQr] = useState(false); const fullLink = `${window.location.origin}${link}`;
   return (<div className="mt-8 pt-6 border-t border-white/20 text-center"><h3 className="text-xl font-bold text-text-primary mb-4">{title}</h3><div className="flex justify-center items-center gap-4 flex-wrap"><Link to={link} className="bg-secondary text-white font-bold py-3 px-6 rounded-full text-lg hover:bg-secondary-hover transition-colors shadow-lg">{text}</Link><button onClick={() => setShowQr(!showQr)} title="Show QR Code" className="p-3 bg-white/50 rounded-full hover:bg-white/80 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M12 20v-1m0-10a5 5 0 015 5h-1a4 4 0 00-4-4V9z" /></svg></button></div>{showQr && <div className="mt-4 bg-white p-4 inline-block rounded-lg shadow-lg"><QRCodeSVG value={fullLink} /></div>}</div>);
@@ -238,9 +236,19 @@ const PaymentProofUploader = ({ registrationId, existingProofUrl, eventSlug, sta
 
   const uploadMutation = useMutation({
     mutationFn: async (fileToUpload: File) => {
-      const newUrl = await uploadToCloudinary(fileToUpload);
+      const { publicUrl } = await uploadImageToSupabase(fileToUpload, {
+        folder: `payment-proofs/${registrationId}`,
+        compression: {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          quality: 0.85,
+          convertTo: 'image/webp',
+          maxOutputBytes: 100 * 1024,
+        },
+        cacheControl: '86400',
+      });
       const { error } = await supabase.functions.invoke('upload-payment-proof-url', {
-        body: { registration_id: registrationId, new_url: newUrl }
+        body: { registration_id: registrationId, new_url: publicUrl }
       });
       if (error) throw error;
     },
